@@ -16,6 +16,7 @@ const { searchForm, inputForm, searchBtn, gallery, loaderEl, loadMoreBtn } = ref
 
 let query = '';
 let page = 1;
+let totalHits = 0;
 
 searchForm.addEventListener('submit', onSearchFormSubmit);
 loadMoreBtn.addEventListener('click', onLoadMoreClick);
@@ -46,7 +47,9 @@ async function onSearchFormSubmit(event) {
 
   try {
     const imagesData = await fetchImages(query, page);
-    if (imagesData.total === 0) {
+    totalHits = imagesData.totalHits;
+
+    if (totalHits === 0) {
       iziToast.show({
         message: "Sorry, there are no images matching your search query. Please try again!",
         position: "topRight",
@@ -63,7 +66,18 @@ async function onSearchFormSubmit(event) {
     initializeLightbox();
     event.target.reset();
 
-    if (imagesData.hits.length === 15) {
+    if (imagesData.hits.length < 15) {
+      iziToast.show({
+        message: "We're sorry, but you've reached the end of search results.",
+        position: "topRight",
+        timeout: 2000,
+        backgroundColor: '#EF4040',
+        messageColor: '#FAFAFB',
+        messageSize: '16px',
+        messageLineHeight: '1.5',
+        class: 'info',
+      });
+    } else {
       loadMoreBtn.classList.remove('is-hidden');
     }
   } catch (error) {
@@ -91,9 +105,20 @@ async function onLoadMoreClick() {
     const imagesData = await fetchImages(query, page);
     gallery.innerHTML += renderImages(imagesData.hits);
     initializeLightbox();
+    smoothScroll();
 
-    if (imagesData.hits.length < 15) {
+    if (gallery.children.length >= totalHits) {
       loadMoreBtn.classList.add('is-hidden');
+      iziToast.show({
+        message: "We're sorry, but you've reached the end of search results.",
+        position: "topRight",
+        timeout: 2000,
+        backgroundColor: '#EF4040',
+        messageColor: '#FAFAFB',
+        messageSize: '16px',
+        messageLineHeight: '1.5',
+        class: 'info',
+      });
     }
   } catch (error) {
     console.log(error);
@@ -112,5 +137,10 @@ async function onLoadMoreClick() {
   }
 }
 
-
-  
+function smoothScroll() {
+  const { height: cardHeight } = document.querySelector('.gallery-item').getBoundingClientRect();
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
+}
