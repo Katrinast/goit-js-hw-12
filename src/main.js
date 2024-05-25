@@ -16,6 +16,7 @@ const { searchForm, inputForm, searchBtn, gallery, loaderEl, loadMoreBtn } = ref
 
 let query = '';
 let page = 1;
+const perPage = 15;
 let totalHits = 0;
 
 searchForm.addEventListener('submit', onSearchFormSubmit);
@@ -46,8 +47,9 @@ async function onSearchFormSubmit(event) {
   loaderEl.classList.remove('is-hidden');
 
   try {
-    const imagesData = await fetchImages(query, page);
+    const imagesData = await fetchImages(query, page, perPage);
     totalHits = imagesData.totalHits;
+    const totalPages = Math.ceil(totalHits / perPage);
 
     if (totalHits === 0) {
       iziToast.show({
@@ -66,7 +68,9 @@ async function onSearchFormSubmit(event) {
     initializeLightbox();
     event.target.reset();
 
-    if (imagesData.hits.length < 15) {
+    if (page < totalPages) {
+      loadMoreBtn.classList.remove('is-hidden');
+    } else {
       iziToast.show({
         message: "We're sorry, but you've reached the end of search results.",
         position: "topRight",
@@ -77,8 +81,6 @@ async function onSearchFormSubmit(event) {
         messageLineHeight: '1.5',
         class: 'info',
       });
-    } else {
-      loadMoreBtn.classList.remove('is-hidden');
     }
   } catch (error) {
     console.log(error);
@@ -102,7 +104,7 @@ async function onLoadMoreClick() {
   loaderEl.classList.remove('is-hidden');
 
   try {
-    const imagesData = await fetchImages(query, page);
+    const imagesData = await fetchImages(query, page, perPage);
     gallery.innerHTML += renderImages(imagesData.hits);
     initializeLightbox();
     smoothScroll();
@@ -125,7 +127,7 @@ async function onLoadMoreClick() {
     iziToast.show({
       message: "An error occurred while fetching images. Please try again.",
       position: "topRight",
-      timeout: 2000,
+      timeout: 5000,
       backgroundColor: '#EF4040',
       messageColor: '#FAFAFB',
       messageSize: '16px',
